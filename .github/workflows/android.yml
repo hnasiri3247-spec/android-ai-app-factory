@@ -44,7 +44,12 @@ jobs:
         run: chmod +x gradlew
       - name: Assemble debug APK
         run: ./gradlew --no-daemon app:assembleDebug
-
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ai-app-factory-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -98,3 +103,4 @@ jobs:
         run: chmod +x gradlew
       - name: Run Android lint
         run: ./gradlew --no-daemon app:lintDebug
+
