@@ -8,8 +8,6 @@ import com.vibe.app.data.database.dao.ChatRoomV2Dao
 import com.vibe.app.data.database.dao.MessageV2Dao
 import com.vibe.app.data.database.dao.PlatformV2Dao
 import com.vibe.app.data.database.dao.ProjectDao
-import com.vibe.app.data.database.dao.WorkflowCheckpointDao
-import com.vibe.app.data.database.dao.WorkflowStateDao
 import com.vibe.app.data.database.entity.ChatPlatformModelV2
 import com.vibe.app.data.database.entity.ChatRoomV2
 import com.vibe.app.data.database.entity.MessageV2
@@ -17,12 +15,10 @@ import com.vibe.app.data.database.entity.PlatformV2
 import com.vibe.app.data.database.entity.Project
 import com.vibe.app.data.database.entity.ProjectBuildStatusConverter
 import com.vibe.app.data.database.entity.StringListConverter
-import com.vibe.app.data.database.entity.WorkflowCheckpointEntity
-import com.vibe.app.data.database.entity.WorkflowStateEntity
 
 @Database(
-    entities = [ChatRoomV2::class, MessageV2::class, PlatformV2::class, ChatPlatformModelV2::class, Project::class, WorkflowStateEntity::class, WorkflowCheckpointEntity::class],
-    version = 4,
+    entities = [ChatRoomV2::class, MessageV2::class, PlatformV2::class, ChatPlatformModelV2::class, Project::class],
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(StringListConverter::class, ProjectBuildStatusConverter::class)
@@ -33,6 +29,4 @@ abstract class ChatDatabaseV2 : RoomDatabase() {
     abstract fun messageDao(): MessageV2Dao
     abstract fun chatPlatformModelDao(): ChatPlatformModelV2Dao
     abstract fun projectDao(): ProjectDao
-    abstract fun workflowStateDao(): WorkflowStateDao
-    abstract fun workflowCheckpointDao(): WorkflowCheckpointDao
 }

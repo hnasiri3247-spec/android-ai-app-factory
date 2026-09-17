@@ -15,6 +15,8 @@ import com.vibe.app.data.database.dao.ChatRoomV2Dao
 import com.vibe.app.data.database.dao.MessageV2Dao
 import com.vibe.app.data.database.dao.PlatformV2Dao
 import com.vibe.app.data.database.dao.ProjectDao
+import com.vibe.app.data.database.dao.WorkflowCheckpointDao
+import com.vibe.app.data.database.dao.WorkflowStateDao
 import javax.inject.Singleton
 
 @Module
@@ -93,8 +95,50 @@ object DatabaseModule {
         }
     }
 
+    private val MIGRATION_CHAT_DB_V2_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `workflow_states` (
+                    `projectId` TEXT NOT NULL,
+                    `stateJson` TEXT NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`projectId`)
+                )
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `workflow_checkpoints` (
+                    `id` TEXT NOT NULL,
+                    `projectId` TEXT NOT NULL,
+                    `stage` TEXT NOT NULL,
+                    `timestamp` INTEGER NOT NULL,
+                    `checkpointJson` TEXT NOT NULL,
+                    `valid` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_workflow_checkpoints_projectId_timestamp` " +
+                    "ON `workflow_checkpoints` (`projectId`, `timestamp`)"
+            )
+        }
+    }
+
     @Provides
     fun provideProjectDao(chatDatabaseV2: ChatDatabaseV2): ProjectDao = chatDatabaseV2.projectDao()
+
+    @Provides
+    fun provideWorkflowStateDao(chatDatabaseV2: ChatDatabaseV2): WorkflowStateDao =
+        chatDatabaseV2.workflowStateDao()
+
+    @Provides
+    fun provideWorkflowCheckpointDao(chatDatabaseV2: ChatDatabaseV2): WorkflowCheckpointDao =
+        chatDatabaseV2.workflowCheckpointDao()
 
     @Provides
     fun provideChatPlatformModelV2Dao(chatDatabaseV2: ChatDatabaseV2): ChatPlatformModelV2Dao = chatDatabaseV2.chatPlatformModelDao()
@@ -117,5 +161,6 @@ object DatabaseModule {
     ).addMigrations(
         MIGRATION_CHAT_DB_V2_1_2,
         MIGRATION_CHAT_DB_V2_2_3,
+        MIGRATION_CHAT_DB_V2_3_4,
     ).build()
 }
