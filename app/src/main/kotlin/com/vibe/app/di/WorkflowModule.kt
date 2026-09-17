@@ -1,7 +1,7 @@
 package com.vibe.app.di
 
 import com.vibe.app.feature.agent.workflow.ProjectStateRepository
-import com.vibe.app.feature.agent.workflow.RoomProjectStateRepository
+import com.vibe.app.data.repository.RoomProjectStateRepository
 import com.vibe.app.feature.agent.workflow.WorkflowOrchestrator
 import com.vibe.app.feature.agent.workflow.WorkflowOrchestratorImpl
 import dagger.Binds
