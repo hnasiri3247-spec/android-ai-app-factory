@@ -14,6 +14,8 @@ import com.vibe.app.data.repository.ChatRepository
 import com.vibe.app.data.repository.ProjectRepository
 import com.vibe.app.data.repository.SettingRepository
 import com.vibe.app.feature.agent.service.AgentSessionManager
+import com.vibe.app.feature.agent.workflow.WorkflowDecision
+import com.vibe.app.feature.agent.workflow.WorkflowOrchestrator
 import com.vibe.app.feature.agent.service.AgentSessionStatus
 import com.vibe.app.feature.agent.service.SessionMessageState
 import com.vibe.app.feature.agent.service.BuildMutex
@@ -66,6 +68,7 @@ class ChatViewModel @Inject constructor(
     private val projectInitializer: ProjectInitializer,
     private val diagnosticLogger: ChatDiagnosticLogger,
     private val sessionManager: AgentSessionManager,
+    private val workflowOrchestrator: WorkflowOrchestrator,
     private val buildMutex: BuildMutex,
     private val pluginManager: PluginManager,
     private val buildFailureAnalyzer: BuildFailureAnalyzer,
@@ -691,8 +694,41 @@ class ChatViewModel @Inject constructor(
         val baselineProjectId = _currentProjectId.value
         viewModelScope.launch { captureTurnSnapshotBaseline(baselineProjectId) }
 
-        // Send chat completion requests
-        _enabledPlatformsInChat.value.forEachIndexed { idx, platformUid ->
+        // Gate every turn through the workflow orchestrator.
+        // The orchestrator audits/resumes the project before the existing
+        // AgentSessionManager / AgentLoop pipeline is allowed to run.
+        viewModelScope.launch {
+            val projectId = _currentProjectId.value
+
+            if (projectId == null) {
+                _loadingStates.update {
+                    List(_enabledPlatformsInChat.value.size) { LoadingState.Idle }
+                }
+                return@launch
+            }
+
+            val userIntent = _groupedMessages.value.userMessages
+                .lastOrNull()
+                ?.content
+                ?.trim()
+                .orEmpty()
+
+            val workflowResult = workflowOrchestrator.start(
+                projectId = projectId,
+                userIntent = userIntent,
+            )
+
+            if (workflowResult.decision == WorkflowDecision.BLOCK ||
+                workflowResult.decision == WorkflowDecision.DONE
+            ) {
+                _loadingStates.update {
+                    List(_enabledPlatformsInChat.value.size) { LoadingState.Idle }
+                }
+                return@launch
+            }
+
+            // Send chat completion requests only after the workflow gate passes.
+            _enabledPlatformsInChat.value.forEachIndexed { idx, platformUid ->
             val platform = _enabledPlatformsInApp.value.firstOrNull { it.uid == platformUid }
             if (platform == null) {
                 // Platform was disabled/removed since chat was created — reset loading state
@@ -718,6 +754,7 @@ class ChatViewModel @Inject constructor(
                 observeAgentSessionState(effectiveChatId)
             }
             responseJobs.add(observeJob)
+            }
         }
     }
 
