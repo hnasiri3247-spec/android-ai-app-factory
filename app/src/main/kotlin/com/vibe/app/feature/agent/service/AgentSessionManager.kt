@@ -96,7 +96,7 @@ class AgentSessionManager @Inject constructor(
         diagnosticContext: DiagnosticContext?,
         chatRoom: ChatRoomV2,
         chatPlatformModels: Map<String, String>,
-    ) {
+    ): AgentSession {
         // Stop existing session for this chat if any
         stopSession(chatId)
 
@@ -173,6 +173,8 @@ class AgentSessionManager @Inject constructor(
 
         // Start foreground service to keep process alive
         AgentForegroundService.start(appContext)
+
+        return session
     }
 
     fun stopSession(chatId: Int) {
